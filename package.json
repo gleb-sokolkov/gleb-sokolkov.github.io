@@ -23,7 +23,8 @@
   },
   "homepage": "https://github.com/gleb-sokolkov/tasks.git#readme",
   "dependencies": {
-    "express": "^4.17.2"
+    "express": "^4.17.2",
+    "three": "^0.148.0"
   },
   "devDependencies": {
     "@babel/core": "^7.16.7",
@@ -54,7 +55,14 @@
   },
   "babel": {
     "presets": [
-      "@babel/preset-env"
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "node": 10
+          }
+        }
+      ]
     ],
     "plugins": [
       "@babel/plugin-proposal-class-properties",
@@ -75,6 +83,17 @@
     "env": {
       "node": true,
       "browser": true
+    },
+    "rules": {
+      "indent": [
+        "error",
+        4
+      ],
+      "no-param-reassign": "warn",
+      "no-plusplus": "off",
+      "no-bitwise": "off",
+      "class-methods-use-this": "warn",
+      "no-unused-vars": "warn"
     }
   },
   "postcss": {

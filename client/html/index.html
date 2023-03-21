@@ -1,11 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <title><%= htmlWebpackPlugin.options.title %></title>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <h1>ABOBUS</h1>
+    <div class="menu">
+        <h1 class="menu__title">
+            P<span class="menu__portal-letter">o</span>rtals
+        </h1>
+        <hr class="menu__divider">
+        <div class="menu__start start">
+            <button type="button" class="start__btn">Go</button>
+            <p class="start__message">Click on the button to start beholding the portals!</p>
+        </div>
+    </div>
+    <canvas id="<%= require('../portals/config.js').default.canvasID %>"></canvas>
 </body>
 </html>

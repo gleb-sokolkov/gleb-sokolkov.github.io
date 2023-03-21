@@ -10,6 +10,7 @@ module.exports = {
     output: {
         path: config.webpack.output.dist,
         filename: config.webpack.entries.bundles.js,
+        globalObject: 'this',
         publicPath: './',
     },
     module: {

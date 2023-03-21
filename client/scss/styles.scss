@@ -1,4 +1,85 @@
 //This file puts styles together, which will be used on every single page of your application   
 @import "fonts";
 @import "variables";
+@import "reset";
 @import "mixins";
+
+body {
+    overflow-y: hidden;
+}
+
+html, body, * {
+    font-family: 'Roboto Mono', monospace;
+}
+
+.menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    position: fixed;
+    inset: 0;
+
+    padding-top: 5%;
+    
+    background: $black-a05;
+    color: $white;
+
+    &_disabled {
+        display: none;
+    }
+
+    &__title {
+        font-size: 4rem;
+        font-weight: 100;
+        text-transform: uppercase;
+        letter-spacing: 0.5em;
+        padding-left: 0.5em;
+    }
+    
+    &__portal-letter {
+        margin-left: -0.25em;
+
+        color: $blue-100;
+        font-style: italic;
+        font-weight: 200;
+        text-shadow: 0 0 8px $blue-100-a075;
+    }
+
+    &__divider {
+        width: 100%;
+        margin-bottom: 3rem;
+        border-color: $white-a01;
+    }
+
+    &__start {
+
+    }
+}
+
+.start {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+
+    &__btn {
+        font-size: 2rem;
+        padding: 0.25em 1em;
+        text-transform: uppercase;
+        background: transparent;
+        border: 1px solid $white;
+        border-radius: 1rem;
+        color: $white;
+        font-weight: 300;
+        box-shadow: 2px 2px $white;
+
+        &:hover {
+            background: $white-a01;
+        }
+    }
+
+    &__message {
+        flex: 0 0 12rem;
+        margin: 0;
+    }
+}
