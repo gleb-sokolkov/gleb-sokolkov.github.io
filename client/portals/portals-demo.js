@@ -2,7 +2,7 @@ import {
     AmbientLight, AxesHelper, BoxGeometry, Camera, CameraHelper, Color,
     DirectionalLight, DirectionalLightHelper, Euler, Fog, Matrix4, Mesh,
     MeshBasicMaterial,
-    MeshLambertMaterial, Object3D, PerspectiveCamera, PlaneGeometry, Scene, Vector3, Vector4,
+    MeshLambertMaterial, Object3D, PerspectiveCamera, Plane, PlaneGeometry, Scene, Vector3, Vector4,
 } from 'three';
 import MathUtils from './math/utils';
 import FPSControls from './fps-controls';
@@ -44,6 +44,7 @@ export default class PortalsDemo extends GameObject {
         this.fpsControls = new FPSControls({
             camera: this.camera,
             position: new Vector3(0, 1, 0),
+            rotation: new Euler(0, 0, 0),
         });
     }
 
@@ -76,7 +77,7 @@ export default class PortalsDemo extends GameObject {
         this.virtualCameraDPHelper.renderOrder = 800;
         this.virtualCameraDPHelper.material.depthTest = false;
 
-        this.scene.add(this.virtualCameraDPHelper);
+        // this.scene.add(this.virtualCameraDPHelper);
 
         this.virtualCameraSP = this.camera.clone();
         this.virtualCameraSP.matrixAutoUpdate = false;
@@ -85,7 +86,7 @@ export default class PortalsDemo extends GameObject {
         this.virtualCameraSPHelper.renderOrder = 800;
         this.virtualCameraSPHelper.material.depthTest = false;
 
-        this.scene.add(this.virtualCameraSPHelper);
+        // this.scene.add(this.virtualCameraSPHelper);
 
         // Adding some environment
         this.plane = new Mesh(
@@ -96,10 +97,10 @@ export default class PortalsDemo extends GameObject {
         this.plane.rotation.set(-Math.PI * 0.5, 0, 0);
 
         this.box = new Mesh(
-            new BoxGeometry(1, 1, 1),
+            new BoxGeometry(8, 0.1, 0.1),
             new MeshLambertMaterial({ color: PortalsDemo.COLORS.redish }),
         );
-        this.box.position.set(2, 0.5, -2);
+        this.box.position.set(0, 0.5, -3);
         // this.box.matrixAutoUpdate = false;
 
         this.wall1 = new Mesh(
@@ -108,23 +109,35 @@ export default class PortalsDemo extends GameObject {
         );
         this.wall1.position.set(0, 15, -7.55);
 
+        this.wall2 = new Mesh(
+            new BoxGeometry(0.5, 6, 7),
+            new MeshLambertMaterial({ color: PortalsDemo.COLORS.redish }),
+        );
+        this.wall2.position.set(4.3, 2, -3);
+
+        this.wall3 = new Mesh(
+            new BoxGeometry(0.5, 6, 7),
+            new MeshLambertMaterial({ color: PortalsDemo.COLORS.redish }),
+        );
+        this.wall3.position.set(-4.3, 2, -3);
+
         this.sourcePortal = new Mesh(
             new PlaneGeometry(1, 2),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.bluePortal }),
         );
         this.sourcePortal.material.colorWrite = false;
-        this.sourcePortal.position.set(0, 1, -5);
-        // this.sourcePortal.rotation.set(0, Math.PI * 0.5, 0);
+        this.sourcePortal.position.set(-4, 1, -3);
+        this.sourcePortal.rotation.set(0, Math.PI * 0.5, 0);
 
         this.destinationPortal = new Mesh(
             new PlaneGeometry(1, 2),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.orangePortal }),
         );
         this.destinationPortal.material.colorWrite = false;
-        this.destinationPortal.position.set(2, 1, -1);
-        // this.destinationPortal.rotation.set(0, Math.PI, 0);
+        this.destinationPortal.position.set(4, 1, -3);
+        this.destinationPortal.rotation.set(0, -Math.PI * 0.5, 0);
 
-        this.scene.add(this.box, this.plane, this.wall1, this.sourcePortal, this.destinationPortal);
+        this.scene.add(this.box, this.plane, this.wall1, this.wall2, this.wall3, this.sourcePortal, this.destinationPortal);
     }
 
     onPlay() {
@@ -160,24 +173,19 @@ export default class PortalsDemo extends GameObject {
      * 
      * @param {Mesh} object3d
      * @param {PerspectiveCamera} camera
-     * @returns {Vector4} 
+     * @returns {Plane} 
      */
     calculateClipPlaneOf(object3d, camera) {
         let worldDir = new Vector3();
         object3d.getWorldDirection(worldDir);
-        // worldDir.negate();
-        const worldDistance = -worldDir.dot(object3d.position);
-        const worldPlane = new Vector4(worldDir.x, worldDir.y, worldDir.z, worldDistance);
 
-        const v = camera.matrixWorldInverse.clone();
-        const p = camera.projectionMatrix;
+        const clipPlane = new Plane();
 
-        const worldToCameraNormal = v.premultiply(p).invert().transpose();
+        clipPlane.setFromNormalAndCoplanarPoint(worldDir.negate(), object3d.position);
 
-        const clipPlane = worldPlane.applyMatrix4(worldToCameraNormal);
+        clipPlane.applyMatrix4(camera.matrixWorldInverse);
 
-        return clipPlane;
-        // return worldPlane;
+        return new Vector4(clipPlane.normal.x, clipPlane.normal.y, clipPlane.normal.z, clipPlane.constant);
     }
 
     /**
@@ -185,7 +193,7 @@ export default class PortalsDemo extends GameObject {
      * @param {PerspectiveCamera} camera 
      */
     updateVirtualCameraProjectionMatrix(object3d, camera) {
-        const t = this.calculateClipPlaneOf(this.sourcePortal, this.camera);
+        const t = this.calculateClipPlaneOf(object3d, this.camera);
 
         const m = MathUtils.calculateObliqueMatrix(t, this.camera.projectionMatrix);
         
@@ -193,6 +201,8 @@ export default class PortalsDemo extends GameObject {
     }
 
     onUpdate(dTime) {
+        this.fpsControls.update(dTime);
+
         this.updateVirtualCameraMatrix(
             this.virtualCameraDP,
             this.virtualCameraDPHelper,
@@ -207,13 +217,8 @@ export default class PortalsDemo extends GameObject {
             this.destinationPortal,
         );
 
-        this.updateVirtualCameraProjectionMatrix(this.destinationPortal, this.virtualCameraDP);
-        // this.updateVirtualCameraProjectionMatrix(this.destinationPortal, this.virtualCameraSP);
-
-
-        // this.virtualCamera.rotation.y += 1 * dTime;
-
-        this.fpsControls.update(dTime);
+        this.updateVirtualCameraProjectionMatrix(this.sourcePortal, this.virtualCameraDP);
+        this.updateVirtualCameraProjectionMatrix(this.destinationPortal, this.virtualCameraSP);
     }
 
     onIdleUpdate(dTime) {}
@@ -309,6 +314,8 @@ export default class PortalsDemo extends GameObject {
 }
 
 /*
+    Stencil buffer visualization
+
     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
     0 0 0 0 0 0 1 1 1 0 0 0 0 0 0
     0 0 0 0 0 0 1 1 1 0 0 0 0 0 0

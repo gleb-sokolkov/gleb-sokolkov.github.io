@@ -44,6 +44,7 @@ export default class FPSControls {
      */
     constructor(params) {
         this.camera = params.camera;
+        this.camera.matrixAutoUpdate = false;
 
         this.keyActions = params.keyActions || this.defaultParams.keyActions;
         this.moveSpeed = params.moveSpeed || this.defaultParams.moveSpeed;
@@ -58,6 +59,8 @@ export default class FPSControls {
         this.rotation = params.rotation || this.defaultParams.rotation;
         this.rotation.reorder('YXZ');
         this.camera.setRotationFromEuler(this.rotation);
+
+        this.camera.updateMatrix();
 
         this.computeDirections();
     }
@@ -78,6 +81,8 @@ export default class FPSControls {
         this.position.add(velocity);
 
         this.camera.position.copy(this.position);
+        this.camera.updateMatrix();
+        this.camera.matrixWorldInverse.copy(this.camera.matrix).invert();
     }
 
     moveForward(mult) {
@@ -127,6 +132,7 @@ export default class FPSControls {
         );
 
         this.camera.setRotationFromEuler(this.rotation);
+
         this.computeDirections();
     }
 

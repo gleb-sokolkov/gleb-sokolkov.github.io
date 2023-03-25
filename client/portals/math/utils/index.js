@@ -14,7 +14,7 @@ const matRot180Y = new Matrix4().makeRotationFromEuler(new Euler(0, Math.PI, 0, 
 Object.freeze(matRot180Y);
 
 /**
- * @param {Vector4} clipPlane
+ * @param {Vector4} clipPlane - a clip plane in view space
  * @param {Matrix4} matrix - a projection matrix
  * @returns {Matrix4}
  */

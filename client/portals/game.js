@@ -44,7 +44,10 @@ export default class Game {
         Game.#ui = value;
     }
 
-    static #clock = [];
+    static #clock;
+    /**
+     * @returns {Clock}
+     */
     static get clock() {
         return Game.#clock;
     }
@@ -142,16 +145,3 @@ export default class Game {
         Game.pScene.render(dTime);
     }
 }
-
-/*
-    GO! -> play -> handlePointerLockChange -> onPlay
-    cancel -> stopPlaying -> handlePointerLockChange -> onStopPlaying
-    Game 
-        - Portals
-        - WindowInput
-        - Menu
-
-    Events
-        - On Start Playing (subscribe in Menu)
-        - On Stop Playing
-*/
