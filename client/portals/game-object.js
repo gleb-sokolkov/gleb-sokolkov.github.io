@@ -2,8 +2,6 @@ import Game from "./game";
 import Updatable from "./updatable";
 
 export default class GameObject extends Updatable {
-    update;
-
     constructor() {
         super();
 
@@ -24,10 +22,12 @@ export default class GameObject extends Updatable {
 
     onPlay() {
         this.update = this.onUpdate;
+        this.render = this.onRender;
     }
 
     onStopPlaying() {
         this.update = this.onIdleUpdate;
+        this.render = this.onIdleRender;
     }
 
     onUpdate(dTime) {}
