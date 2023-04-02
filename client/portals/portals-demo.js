@@ -113,10 +113,10 @@ export default class PortalsDemo extends GameObject {
         this.wall1.position.set(0, 15, -7.55);
 
         this.wall2 = new Mesh(
-            new BoxGeometry(5.5, 6, 7),
+            new BoxGeometry(0.5, 6, 7),
             new MeshLambertMaterial({ color: PortalsDemo.COLORS.redish }),
         );
-        this.wall2.position.set(14.3, 2, -3);
+        this.wall2.position.set(4.3, 2, -3);
 
         this.wall3 = new Mesh(
             new BoxGeometry(0.5, 6, 7),
@@ -125,7 +125,7 @@ export default class PortalsDemo extends GameObject {
         this.wall3.position.set(-1.3, 2, -3);
 
         this.sourcePortal = new Mesh(
-            new PlaneGeometry(3, 2),
+            new PlaneGeometry(1, 2),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.bluePortal }),
         );
         this.sourcePortal.material.colorWrite = false;
@@ -133,12 +133,12 @@ export default class PortalsDemo extends GameObject {
         this.sourcePortal.rotation.set(0, Math.PI * 0.5, 0);
 
         this.destinationPortal = new Mesh(
-            new PlaneGeometry(3, 2),
+            new PlaneGeometry(1, 2),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.orangePortal }),
         );
         this.destinationPortal.material.colorWrite = false;
-        this.destinationPortal.position.set(1, 1, -3);
-        this.destinationPortal.rotation.set(0, -Math.PI * 0.5, 0);
+        this.destinationPortal.position.set(2.5, 1, -3);
+        this.destinationPortal.rotation.set(0, -Math.PI * 0.45, 0);
 
         this.scene.add(
             this.box,
@@ -210,82 +210,21 @@ export default class PortalsDemo extends GameObject {
     }
 
     /**
-     * @param {PerspectiveCamera} virtualCamera
-     * @param {CameraHelper} virtualCameraHelper
-     * @param {Matrix4} cameraMatrix
-     * @param {Matrix4} destinationMatrix
-     * @param {Matrix4} sourceMatrix
+     * @param {Object3D} sourcePortal
+     * @param {Object3D} destinationPortal
      */
-    updateVirtualCameraMatrix(
-        destinationMatrix,
-        sourceMatrix,
-        cameraMatrix,
-        virtualCamera,
-        virtualCameraHelper,
-    ) {
-        const m = this.calculateVirtualCameraMatrix(destinationMatrix, sourceMatrix, cameraMatrix);
-
-        virtualCamera.matrix.elements = m.elements;
-        virtualCameraHelper.matrix.elements = m.elements;
-
-        virtualCameraHelper.update();
-    }
-
-    /**
-     * @param {Object3D} object3d
-     * @param {PerspectiveCamera} camera
-     * @param {Matrix4} cameraLocalMat
-     * @param {Matrix4} cameraProjMat
-     */
-    updateVirtualCameraProjectionMatrix(object3d, camera, cameraLocalMat, cameraProjMat) {
-        const obliqueMat = this.calculateObliqueMatrix(object3d, cameraLocalMat, cameraProjMat);
-
-        camera.projectionMatrix.elements = obliqueMat.elements;
-    }
-
-    updateCameraDataForNonRecursive() {
-        this.updateVirtualCameraMatrix(
-            this.destinationPortal.matrix,
-            this.sourcePortal.matrix,
-            this.camera.matrix,
-            this.virtualCameraDP,
-            this.virtualCameraDPHelper,
-        );
-
-        this.updateVirtualCameraMatrix(
-            this.sourcePortal.matrix,
-            this.destinationPortal.matrix,
-            this.camera.matrix,
-            this.virtualCameraSP,
-            this.virtualCameraSPHelper,
-        );
-
-        this.updateVirtualCameraProjectionMatrix(
-            this.sourcePortal,
-            this.virtualCameraDP,
-            this.camera.matrixWorldInverse,
-            this.camera.projectionMatrix,
-        );
-        this.updateVirtualCameraProjectionMatrix(
-            this.destinationPortal,
-            this.virtualCameraSP,
-            this.camera.matrixWorldInverse,
-            this.camera.projectionMatrix,
-        );
-    }
-
-    updateCameraDataForRecursive() {
+    calculatePortalMat4Array(sourcePortal, destinationPortal) {
         // clear the array
         this.preCalcMat4Array = [];
 
         const initModel = this.calculateVirtualCameraMatrix(
-            this.destinationPortal.matrix,
-            this.sourcePortal.matrix,
+            destinationPortal.matrix,
+            sourcePortal.matrix,
             this.camera.matrix,
         );
         const initView = this.camera.matrixWorldInverse;
         const initProj = this.calculateObliqueMatrix(
-            this.sourcePortal,
+            sourcePortal,
             initView,
             this.camera.projectionMatrix,
         );
@@ -300,13 +239,13 @@ export default class PortalsDemo extends GameObject {
             const prevElem = this.preCalcMat4Array[i - 1];
 
             const model = this.calculateVirtualCameraMatrix(
-                this.destinationPortal.matrix,
-                this.sourcePortal.matrix,
+                destinationPortal.matrix,
+                sourcePortal.matrix,
                 prevElem.model,
             );
             const view = prevElem.model.clone().invert();
             const proj = this.calculateObliqueMatrix(
-                this.sourcePortal,
+                sourcePortal,
                 view,
                 this.camera.projectionMatrix,
             );
@@ -314,23 +253,32 @@ export default class PortalsDemo extends GameObject {
             this.preCalcMat4Array.push({ model, view, proj });
         }
 
-        // this.vModelMat2 = this.calculateVirtualCameraMatrix(
-        //     this.destinationPortal.matrix,
-        //     this.sourcePortal.matrix,
-        //     this.vModelMat1,
-        // );
-        // this.vModelInverseMat2 = this.vModelMat1.clone().invert();
-        // this.vObliqueMat2 = this.calculateObliqueMatrix(
-        //     this.sourcePortal,
-        //     this.vModelInverseMat2,
-        //     this.camera.projectionMatrix,
-        // );
+        return this.preCalcMat4Array;
+    }
+
+    updateCameraDataForRecursive() {
+        // eslint-disable-next-line max-len
+        const srcPortalMat4Array = this.calculatePortalMat4Array(this.sourcePortal, this.destinationPortal);
+        // eslint-disable-next-line max-len
+        const dstPortalMat4Array = this.calculatePortalMat4Array(this.destinationPortal, this.sourcePortal);
+
+        this.portalDataArray = [
+            {
+                object3d: this.sourcePortal,
+                mat4Array: srcPortalMat4Array,
+            },
+            // {
+            //     object3d: this.destinationPortal,
+            //     mat4Array: dstPortalMat4Array,
+            // },
+        ];
     }
 
     onUpdate(dTime) {
         this.fpsControls.update(dTime);
 
-        // this.updateCameraDataForNonRecursive();
+        // this.destinationPortal.rotation.y += 0.01;
+
         this.updateCameraDataForRecursive();
     }
 
@@ -432,34 +380,83 @@ export default class PortalsDemo extends GameObject {
         // render source portal to stencil buffer only
         // -----------------------------------------------------------------------------------------
 
-        gl.stencilMask(0xFF);
-        gl.stencilFunc(gl.NEVER, 0, 0xFF);
-        gl.stencilOp(gl.INCR, gl.KEEP, gl.KEEP);
-
-        gl.depthMask(false);
-
-        gl.colorMask(false, false, false, false);
-
-        this.virtualCameraDP.matrixWorld.elements = this.camera.matrix.elements;
-        this.virtualCameraDP.projectionMatrix.elements = this.camera.projectionMatrix.elements;
-
-        Game.renderer.render(this.sourcePortal, this.virtualCameraDP);
-
-        for (let i = 0; i < this.preCalcMat4Array.length - 1; i++) {
-            const mat4Obj = this.preCalcMat4Array[i];
+        for (let i = 0; i < this.portalDataArray.length; i++) {
+            const data = this.portalDataArray[i];
 
             gl.stencilMask(0xFF);
-            gl.stencilFunc(gl.EQUAL, 0, 0xFF);
+            gl.stencilFunc(gl.NEVER, 0, 0xFF);
             gl.stencilOp(gl.INCR, gl.KEEP, gl.KEEP);
 
             gl.depthMask(false);
 
             gl.colorMask(false, false, false, false);
 
-            this.virtualCameraDP.matrixWorld.elements = mat4Obj.model.elements;
-            this.virtualCameraDP.projectionMatrix.elements = mat4Obj.proj.elements;
+            this.virtualCameraDP.matrixWorld.elements = this.camera.matrix.elements;
+            this.virtualCameraDP.projectionMatrix.elements = this.camera.projectionMatrix.elements;
 
-            Game.renderer.render(this.sourcePortal, this.virtualCameraDP);
+            Game.renderer.render(data.object3d, this.virtualCameraDP);
+
+            for (let k = 0; k < data.mat4Array.length - 1; k++) {
+                const mat4Obj = data.mat4Array[k];
+
+                gl.stencilMask(0xFF);
+                gl.stencilFunc(gl.EQUAL, 0, 0xFF);
+                gl.stencilOp(gl.INCR, gl.KEEP, gl.KEEP);
+
+                gl.depthMask(false);
+
+                gl.colorMask(false, false, false, false);
+
+                this.virtualCameraDP.matrixWorld.elements = mat4Obj.model.elements;
+                this.virtualCameraDP.projectionMatrix.elements = mat4Obj.proj.elements;
+
+                Game.renderer.render(data.object3d, this.virtualCameraDP);
+            }
+
+            for (let k = data.mat4Array.length - 1; k > 0; k--) {
+                gl.stencilMask(0x00);
+                gl.stencilFunc(gl.EQUAL, k + 1, 0xFF);
+
+                gl.colorMask(true, true, true, true);
+
+                gl.depthMask(true);
+
+                this.virtualCameraDP.matrixWorld.elements = data.mat4Array[k].model.elements;
+                // eslint-disable-next-line max-len
+                this.virtualCameraDP.projectionMatrix.elements = data.mat4Array[k].proj.elements;
+
+                Game.renderer.render(this.scene, this.virtualCameraDP);
+
+                gl.stencilMask(0xFF);
+                gl.stencilFunc(gl.EQUAL, k + 1, 0xFF);
+                gl.stencilOp(gl.KEEP, gl.KEEP, gl.DECR);
+
+                gl.colorMask(false, false, false, false);
+
+                gl.depthMask(true);
+
+                gl.clear(gl.DEPTH_BUFFER_BIT);
+
+                // eslint-disable-next-line max-len
+                this.virtualCameraDP.matrixWorld.elements = data.mat4Array[k - 1].model.elements;
+                // eslint-disable-next-line max-len
+                this.virtualCameraDP.projectionMatrix.elements = data.mat4Array[k - 1].proj.elements;
+
+                Game.renderer.render(data.object3d, this.virtualCameraDP);
+            }
+
+            gl.stencilMask(0x00);
+            gl.stencilFunc(gl.EQUAL, 1, 0xFF);
+
+            gl.colorMask(true, true, true, true);
+
+            gl.depthMask(true);
+
+            this.virtualCameraDP.matrixWorld.elements = data.mat4Array[0].model.elements;
+            // eslint-disable-next-line max-len
+            this.virtualCameraDP.projectionMatrix.elements = data.mat4Array[0].proj.elements;
+
+            Game.renderer.render(this.scene, this.virtualCameraDP);
         }
 
         // gl.stencilMask(0xFF);
@@ -495,37 +492,6 @@ export default class PortalsDemo extends GameObject {
         // 2. render scene from destination point of view using stencil buffer
         // -----------------------------------------------------------------------------------------
 
-        for (let i = this.preCalcMat4Array.length - 1; i > 0; i--) {
-            gl.stencilMask(0x00);
-            gl.stencilFunc(gl.EQUAL, i + 1, 0xFF);
-
-            gl.colorMask(true, true, true, true);
-
-            gl.depthMask(true);
-
-            this.virtualCameraDP.matrixWorld.elements = this.preCalcMat4Array[i].model.elements;
-            // eslint-disable-next-line max-len
-            this.virtualCameraDP.projectionMatrix.elements = this.preCalcMat4Array[i].proj.elements;
-
-            Game.renderer.render(this.scene, this.virtualCameraDP);
-
-            gl.stencilMask(0xFF);
-            gl.stencilFunc(gl.EQUAL, i + 1, 0xFF);
-            gl.stencilOp(gl.KEEP, gl.KEEP, gl.DECR);
-
-            gl.colorMask(false, false, false, false);
-
-            gl.depthMask(true);
-
-            gl.clear(gl.DEPTH_BUFFER_BIT);
-
-            this.virtualCameraDP.matrixWorld.elements = this.preCalcMat4Array[i - 1].model.elements;
-            // eslint-disable-next-line max-len
-            this.virtualCameraDP.projectionMatrix.elements = this.preCalcMat4Array[i - 1].proj.elements;
-
-            Game.renderer.render(this.sourcePortal, this.virtualCameraDP);
-        }
-
         // gl.stencilMask(0x00);
         // gl.stencilFunc(gl.EQUAL, 2, 0xFF);
 
@@ -553,19 +519,6 @@ export default class PortalsDemo extends GameObject {
 
         // Game.renderer.render(this.sourcePortal, this.virtualCameraDP);
 
-        gl.stencilMask(0x00);
-        gl.stencilFunc(gl.EQUAL, 1, 0xFF);
-
-        gl.colorMask(true, true, true, true);
-
-        gl.depthMask(true);
-
-        this.virtualCameraDP.matrixWorld.elements = this.preCalcMat4Array[0].model.elements;
-        // eslint-disable-next-line max-len
-        this.virtualCameraDP.projectionMatrix.elements = this.preCalcMat4Array[0].proj.elements;
-
-        Game.renderer.render(this.scene, this.virtualCameraDP);
-
         // -----------------------------------------------------------------------------------------
         //
         //
@@ -590,7 +543,14 @@ export default class PortalsDemo extends GameObject {
 
         gl.colorMask(false, false, false, false);
 
-        Game.renderer.render(this.sourcePortal, this.camera);
+        for (let i = 0; i < this.portalDataArray.length; i++) {
+            const data = this.portalDataArray[i];
+
+            this.virtualCameraDP.matrixWorld.elements = data.mat4Array[0].model.elements;
+            this.virtualCameraDP.projectionMatrix.elements = data.mat4Array[0].proj.elements;
+
+            Game.renderer.render(data.object3d, this.camera);
+        }
 
         // -----------------------------------------------------------------------------------------
         //
@@ -612,7 +572,6 @@ export default class PortalsDemo extends GameObject {
 }
 
 /*
-    Stencil buffer visualization
 
     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
     0 0 1 1 1 1 1 1 1 1 1 0 0 0 0
