@@ -93,7 +93,8 @@
       "no-plusplus": "off",
       "no-bitwise": "off",
       "class-methods-use-this": "warn",
-      "no-unused-vars": "warn"
+      "no-unused-vars": "warn",
+      "max-len": "warn"
     }
   },
   "postcss": {

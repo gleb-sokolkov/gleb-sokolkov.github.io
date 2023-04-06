@@ -14,6 +14,7 @@ const matRot180Y = new Matrix4().makeRotationFromEuler(new Euler(0, Math.PI, 0, 
 Object.freeze(matRot180Y);
 
 /**
+ * Lengyel Eric's Oblique Near-Plane Clipping implementation: http://www.terathon.com/code/oblique.html
  * @param {Vector4} clipPlane - a clip plane in view space
  * @param {Matrix4} matrix - a projection matrix
  * @returns {Matrix4}
