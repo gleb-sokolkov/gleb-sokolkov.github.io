@@ -21,7 +21,7 @@ export default class FPSControls {
         };
     }
 
-    get actions() {
+    get defaultActions() {
         return {
             moveForward: this.moveForward.bind(this),
             moveBack: this.moveBack.bind(this),
@@ -46,15 +46,15 @@ export default class FPSControls {
         this.camera = params.camera;
         this.camera.matrixAutoUpdate = false;
 
+        this.actions = this.defaultActions;
+
         this.keyActions = params.keyActions || this.defaultParams.keyActions;
         this.moveSpeed = params.moveSpeed || this.defaultParams.moveSpeed;
         this.position = params.position || this.defaultParams.position;
         this.camera.position.copy(this.position);
 
-        Game.canvasElement.addEventListener(
-            WindowInput.EVENTS.ON_MOUSE_MOVE,
-            this.actions.mouseLook,
-        );
+        this.subscribeMouseEvent();
+
         this.sensitivity = params.sensitivity || this.defaultParams.sensitivity;
         this.rotation = params.rotation || this.defaultParams.rotation;
         this.rotation.reorder('YXZ');
@@ -63,6 +63,13 @@ export default class FPSControls {
         this.camera.updateMatrix();
 
         this.computeDirections();
+    }
+
+    subscribeMouseEvent() {
+        Game.canvasElement.addEventListener(
+            WindowInput.EVENTS.ON_MOUSE_MOVE,
+            this.actions.mouseLook,
+        );
     }
 
     update(dTime) {
@@ -118,6 +125,8 @@ export default class FPSControls {
     }
 
     mouseLook() {
+        if (!Game.isLocked) return;
+
         const { movement } = WindowInput.instance.mouseInput;
 
         this.rotation.setFromQuaternion(this.camera.quaternion);

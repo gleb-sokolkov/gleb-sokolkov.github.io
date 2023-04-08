@@ -55,6 +55,14 @@ export default class Game {
         Game.#clock = value;
     }
 
+    static #isLocked;
+    static get isLocked() {
+        return Game.#isLocked;
+    }
+    static set isLocked(value) {
+        Game.#isLocked = value;
+    }
+
     static #events;
     static get events() {
         return Game.#events;
@@ -112,14 +120,18 @@ export default class Game {
     static handlePointerLockChange() {
         if (document.pointerLockElement === Game.canvasElement) {
             Game.canvasElement.dispatchEvent(Game.events[Game.EVENTS.ON_PLAY]);
+
+            Game.isLocked = true;
         } else {
             Game.canvasElement.dispatchEvent(Game.events[Game.EVENTS.ON_STOP_PLAYING]);
+
+            Game.isLocked = false;
         }
     }
 
     static startLoop() {
         Game.clock = new Clock();
-
+        
         const loop = () => {
             const dTime = Game.clock.getDelta();
 

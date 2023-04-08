@@ -82,8 +82,8 @@ export default class WindowInput {
     }
     
     handleMouseMove({ movementX, movementY }) {
-        this.mouseInput.movement.x = movementX;
-        this.mouseInput.movement.y = movementY;
+        this.mouseInput.movement.x = movementX || 0;
+        this.mouseInput.movement.y = movementY || 0;
         
         Game.canvasElement.dispatchEvent(this.#events[WindowInput.EVENTS.ON_MOUSE_MOVE]);
     }

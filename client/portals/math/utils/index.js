@@ -1,5 +1,5 @@
 import {
-    Matrix3, MathUtils, Matrix4, Euler, Vector4
+    Matrix3, MathUtils, Matrix4, Euler, Vector4,
 } from 'three';
 
 const mat3ProjXZ = new Matrix3();
@@ -46,9 +46,21 @@ function calculateObliqueMatrix(clipPlane, matrix) {
     return matMod;
 }
 
+function getPillarRandValue(minXZ, maxXZ, thickness) {
+    const halfThick = thickness * 0.5;
+    const range = maxXZ - minXZ;
+    const mr = Math.floor(Math.random() * range / halfThick) * halfThick;
+    const exmr = mr * 2 - range * 0.5;
+
+    const p = exmr + Math.sign(exmr) * minXZ;
+
+    return p;
+}
+
 export default {
     ...MathUtils,
     mat3ProjXZ,
     matRot180Y,
     calculateObliqueMatrix,
+    getPillarRandValue,
 };

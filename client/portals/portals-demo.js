@@ -1,8 +1,8 @@
 import {
     AmbientLight, AxesHelper, BoxGeometry, Camera, CameraHelper, Color,
-    DirectionalLight, DirectionalLightHelper, Euler, Fog, Matrix4, Mesh,
+    DirectionalLight, DirectionalLightHelper, Euler, Fog, Group, Matrix4, Mesh,
     MeshBasicMaterial,
-    MeshLambertMaterial, Object3D, PerspectiveCamera, Plane, PlaneGeometry, Scene, Vector3, Vector4,
+    MeshLambertMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Plane, PlaneGeometry, Scene, TetrahedronGeometry, Vector3, Vector4,
 } from 'three';
 import MathUtils from './math/utils';
 import FPSControls from './fps-controls';
@@ -13,11 +13,11 @@ export default class PortalsDemo extends GameObject {
     static get COLORS() {
         const colors = {
             default: new Color('rgb(255, 255, 255)'),
-            sky: new Color('rgb(132, 205, 255)'),
+            sky: new Color('rgb(175, 175, 175)'),
             bluePortal: new Color('#8ac8ff'),
             orangePortal: new Color('#f7cc54'),
-            grass: new Color('rgb(140, 177, 112)'),
-            redish: new Color('rgb(156, 111, 87)'),
+            grass: new Color('rgb(50, 50, 50)'),
+            gray: new Color('rgb(50, 50, 50)'),
         };
 
         return colors;
@@ -25,6 +25,8 @@ export default class PortalsDemo extends GameObject {
 
     constructor() {
         super();
+
+        this.portalDataArray = [];
 
         this.initScene();
         this.initCamera();
@@ -36,7 +38,7 @@ export default class PortalsDemo extends GameObject {
     }
 
     initCamera() {
-        this.camera = new PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 150);
+        this.camera = new PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 500);
 
         this.fpsControls = new FPSControls({
             camera: this.camera,
@@ -45,14 +47,48 @@ export default class PortalsDemo extends GameObject {
         });
     }
 
+    generatePillars() {
+        const count = 30;
+        const pillarLength = 200;
+        const pillarThickness = 10;
+        const maxXZ = 210;
+        const minXZ = 10;
+
+        const pillars = new Group();
+
+        for (let i = 0; i < count; i++) {
+            const pillar = new Mesh(
+                new BoxGeometry(pillarThickness, pillarLength, pillarThickness),
+                new MeshStandardMaterial({ color: PortalsDemo.COLORS.gray }),
+            );
+
+            const rx = MathUtils.getPillarRandValue(minXZ, maxXZ, pillarThickness);
+            const rz = MathUtils.getPillarRandValue(minXZ, maxXZ, pillarThickness);
+
+            pillar.matrixAutoUpdate = false;
+            pillar.matrix.setPosition(rx, pillarLength * 0.5, rz);
+
+            pillars.add(pillar);
+        }
+
+        return pillars;
+    }
+
     environment() {
         Game.renderer.setClearColor(PortalsDemo.COLORS.sky);
         Game.renderer.autoClear = false;
+        Game.renderer.shadowMap.enabled = true;
 
         this.scene.fog = new Fog(PortalsDemo.COLORS.sky, this.camera.near, this.camera.far);
 
         const dirLight = new DirectionalLight(PortalsDemo.COLORS.default, 1);
-        dirLight.position.set(0, 7, 10);
+        dirLight.position.set(-30, 4, -36);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 512;
+        dirLight.shadow.mapSize.height = 512;
+        dirLight.shadow.bias = 0.01;
+        dirLight.shadow.camera.near = 0.1;
+        dirLight.shadow.camera.far = 500;
 
         const ambientLight = new AmbientLight(PortalsDemo.COLORS.sky, 0.5);
 
@@ -64,91 +100,125 @@ export default class PortalsDemo extends GameObject {
         const lightDir = new DirectionalLightHelper(dirLight);
 
         this.scene.add(dirLight, ambientLight);
-        this.scene.add(axes, lightDir);
+        // this.scene.add(axes, lightDir);
 
         // Adding virtual cameras
         this.virtualCameraDP = this.camera.clone();
         this.virtualCameraDP.matrixAutoUpdate = false;
-        this.virtualCameraDPHelper = new CameraHelper(this.virtualCameraDP);
-        this.virtualCameraDPHelper.matrixAutoUpdate = false;
-        this.virtualCameraDPHelper.renderOrder = 800;
-        this.virtualCameraDPHelper.material.depthTest = false;
+        // this.virtualCameraDPHelper = new CameraHelper(this.virtualCameraDP);
+        // this.virtualCameraDPHelper.matrixAutoUpdate = false;
+        // this.virtualCameraDPHelper.renderOrder = 800;
+        // this.virtualCameraDPHelper.material.depthTest = false;
 
         // this.scene.add(this.virtualCameraDPHelper);
 
         this.virtualCameraSP = this.camera.clone();
         this.virtualCameraSP.matrixAutoUpdate = false;
-        this.virtualCameraSPHelper = new CameraHelper(this.virtualCameraSP);
-        this.virtualCameraSPHelper.matrixAutoUpdate = false;
-        this.virtualCameraSPHelper.renderOrder = 800;
-        this.virtualCameraSPHelper.material.depthTest = false;
+        // this.virtualCameraSPHelper = new CameraHelper(this.virtualCameraSP);
+        // this.virtualCameraSPHelper.matrixAutoUpdate = false;
+        // this.virtualCameraSPHelper.renderOrder = 800;
+        // this.virtualCameraSPHelper.material.depthTest = false;
 
         // this.scene.add(this.virtualCameraSPHelper);
 
-        // Adding some environment
+        // -------------------------------------------------------------------------------------
+        //
+        //
+        // Floor and ceilings
+        // -------------------------------------------------------------------------------------
         this.plane = new Mesh(
-            new PlaneGeometry(1000, 1000),
-            new MeshLambertMaterial({ color: PortalsDemo.COLORS.grass }),
+            new PlaneGeometry(5000, 5000),
+            new MeshStandardMaterial({ color: PortalsDemo.COLORS.grass }),
         );
+        this.plane.receiveShadow = true;
+        this.plane.material.dithering = true;
         this.plane.position.set(0, 0, 0);
         this.plane.rotation.set(-Math.PI * 0.5, 0, 0);
 
-        this.box = new Mesh(
-            new BoxGeometry(8, 0.1, 0.1),
-            new MeshLambertMaterial({ color: PortalsDemo.COLORS.redish }),
+        this.ceilings = new Mesh(
+            new PlaneGeometry(5000, 5000),
+            new MeshStandardMaterial({ color: PortalsDemo.COLORS.grass }),
         );
-        this.box.position.set(0, 0.5, -3);
+        this.ceilings.receiveShadow = true;
+        this.ceilings.material.dithering = true;
+        this.ceilings.position.set(0, 300, 0);
+        this.ceilings.rotation.set(Math.PI * 0.5, 0, 0);
+
+        // -------------------------------------------------------------------------------------
+        //
+        //
+        // Pillars
+        // -------------------------------------------------------------------------------------
+        this.pillars = this.generatePillars();
+
+        // -------------------------------------------------------------------------------------
+        //
+        //
+        // Random boxes
+        // -------------------------------------------------------------------------------------
+        this.box = new Mesh(
+            new BoxGeometry(1, 1, 1),
+            new MeshStandardMaterial({ color: PortalsDemo.COLORS.gray }),
+        );
+        this.box.castShadow = true;
+        this.box.position.set(-2, 0.5, -5);
 
         this.box2 = new Mesh(
             new BoxGeometry(0.5, 0.5, 0.5),
-            new MeshLambertMaterial({ color: PortalsDemo.COLORS.bluePortal }),
+            new MeshStandardMaterial({ color: PortalsDemo.COLORS.gray }),
         );
+        this.box2.castShadow = true;
         this.box2.position.set(0, 0.25, -4);
         // this.box.matrixAutoUpdate = false;
 
-        this.wall1 = new Mesh(
-            new BoxGeometry(200, 30, 2),
-            new MeshLambertMaterial({ color: PortalsDemo.COLORS.redish }),
+        // -------------------------------------------------------------------------------------
+        //
+        //
+        // Source portal
+        // -------------------------------------------------------------------------------------
+        this.sourcePortalFrame = new Mesh(
+            new BoxGeometry(0.5, 5, 5),
+            new MeshStandardMaterial({ color: PortalsDemo.COLORS.bluePortal }),
         );
-        this.wall1.position.set(0, 15, -7.55);
-
-        this.wall2 = new Mesh(
-            new BoxGeometry(0.5, 6, 7),
-            new MeshLambertMaterial({ color: PortalsDemo.COLORS.redish }),
-        );
-        this.wall2.position.set(4.3, 2, -3);
-
-        this.wall3 = new Mesh(
-            new BoxGeometry(0.5, 6, 7),
-            new MeshLambertMaterial({ color: PortalsDemo.COLORS.redish }),
-        );
-        this.wall3.position.set(-1.3, 2, -3);
+        this.sourcePortalFrame.castShadow = true;
+        this.sourcePortalFrame.position.set(-5.3, 4, -3);
 
         this.sourcePortal = new Mesh(
             new PlaneGeometry(4, 4),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.bluePortal }),
         );
-        this.sourcePortal.material.colorWrite = false;
-        this.sourcePortal.position.set(-1, 2, -3);
+        this.sourcePortal.position.set(-5, 4, -3);
         this.sourcePortal.rotation.set(0, Math.PI * 0.5, 0);
+        this.sourcePortal.material.colorWrite = false;
+
+        // -------------------------------------------------------------------------------------
+        //
+        //
+        // Destination portal
+        // -------------------------------------------------------------------------------------
+        this.destinationPortalFrame = new Mesh(
+            new BoxGeometry(0.5, 5, 5),
+            new MeshStandardMaterial({ color: PortalsDemo.COLORS.orangePortal }),
+        );
+        this.destinationPortalFrame.castShadow = true;
+        this.destinationPortalFrame.position.set(2.3, 4, -3);
 
         this.destinationPortal = new Mesh(
             new PlaneGeometry(4, 4),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.orangePortal }),
         );
         this.destinationPortal.material.colorWrite = false;
-        this.destinationPortal.position.set(1.5, 2, -6.5);
-        this.destinationPortal.rotation.set(0, Math.PI * 0.0, 0);
+        this.destinationPortal.position.set(2.0, 4, -3.0);
+        this.destinationPortal.rotation.set(0, Math.PI * 1.5, 0);
 
         this.scene.add(
             this.box,
             this.box2,
+            this.pillars,
             this.plane,
-            this.wall1,
-            this.wall2,
-            this.wall3,
-            // this.sourcePortal,
-            // this.destinationPortal,
+            this.ceilings,
+            this.sourcePortalFrame,
+            this.destinationPortalFrame,
         );
     }
 
@@ -257,9 +327,7 @@ export default class PortalsDemo extends GameObject {
     }
 
     updateCameraDataForRecursive() {
-        // eslint-disable-next-line max-len
         const srcPortalMat4Array = this.calculatePortalMat4Array(this.sourcePortal, this.destinationPortal);
-        // eslint-disable-next-line max-len
         const dstPortalMat4Array = this.calculatePortalMat4Array(this.destinationPortal, this.sourcePortal);
 
         this.portalDataArray = [
@@ -277,11 +345,15 @@ export default class PortalsDemo extends GameObject {
     onUpdate(dTime) {
         this.fpsControls.update(dTime);
 
-        // this.destinationPortal.rotation.y += 0.01;
+        this.destinationPortal.rotation.z += 0.001;
+        this.destinationPortalFrame.rotation.x = -this.destinationPortal.rotation.z;
 
         this.updateCameraDataForRecursive();
     }
 
+    /**
+     * @deprecated
+     */
     renderNonRecursive() {
         const gl = Game.renderer.getContext();
 
