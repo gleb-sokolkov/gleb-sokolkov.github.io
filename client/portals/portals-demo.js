@@ -2,8 +2,9 @@ import {
     AmbientLight, AxesHelper, BoxGeometry, Camera, CameraHelper, Color,
     DirectionalLight, DirectionalLightHelper, Euler, Fog, Group, Matrix4, Mesh,
     MeshBasicMaterial,
-    MeshLambertMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Plane, PlaneGeometry, Scene, TetrahedronGeometry, Vector3, Vector4,
+    MeshLambertMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Plane, PlaneGeometry, Ray, Scene, TetrahedronGeometry, Vector3, Vector4,
 } from 'three';
+import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min';
 import MathUtils from './math/utils';
 import FPSControls from './fps-controls';
 import Game from './game';
@@ -27,10 +28,18 @@ export default class PortalsDemo extends GameObject {
         super();
 
         this.portalDataArray = [];
+        this.maxRecursionCount = 16;
+        this.recursionCount = 0;
+        this.sourcePortal = null;
+        this.destinationPortal = null;
+
+        this.sourcePortalRotation = new Euler();
+        this.destinationPortalRotation = new Euler();
 
         this.initScene();
         this.initCamera();
         this.environment();
+        this.initGUI();
     }
 
     initScene() {
@@ -177,17 +186,17 @@ export default class PortalsDemo extends GameObject {
         // Source portal
         // -------------------------------------------------------------------------------------
         this.sourcePortalFrame = new Mesh(
-            new BoxGeometry(0.5, 5, 5),
+            new BoxGeometry(0.5, 9, 9),
             new MeshStandardMaterial({ color: PortalsDemo.COLORS.bluePortal }),
         );
         this.sourcePortalFrame.castShadow = true;
-        this.sourcePortalFrame.position.set(-5.3, 4, -3);
+        this.sourcePortalFrame.position.set(-5.3, 8, -3);
 
         this.sourcePortal = new Mesh(
-            new PlaneGeometry(4, 4),
+            new PlaneGeometry(8, 8),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.bluePortal }),
         );
-        this.sourcePortal.position.set(-5, 4, -3);
+        this.sourcePortal.position.set(-5, 8, -3);
         this.sourcePortal.rotation.set(0, Math.PI * 0.5, 0);
         this.sourcePortal.material.colorWrite = false;
 
@@ -197,18 +206,18 @@ export default class PortalsDemo extends GameObject {
         // Destination portal
         // -------------------------------------------------------------------------------------
         this.destinationPortalFrame = new Mesh(
-            new BoxGeometry(0.5, 5, 5),
+            new BoxGeometry(0.5, 9, 9),
             new MeshStandardMaterial({ color: PortalsDemo.COLORS.orangePortal }),
         );
         this.destinationPortalFrame.castShadow = true;
-        this.destinationPortalFrame.position.set(2.3, 4, -3);
+        this.destinationPortalFrame.position.set(2.3, 8, -3);
 
         this.destinationPortal = new Mesh(
-            new PlaneGeometry(4, 4),
+            new PlaneGeometry(8, 8),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.orangePortal }),
         );
         this.destinationPortal.material.colorWrite = false;
-        this.destinationPortal.position.set(2.0, 4, -3.0);
+        this.destinationPortal.position.set(2.0, 8, -3.0);
         this.destinationPortal.rotation.set(0, Math.PI * 1.5, 0);
 
         this.scene.add(
@@ -222,61 +231,29 @@ export default class PortalsDemo extends GameObject {
         );
     }
 
-    /**
-     *
-     * @param {Matrix4} destinationMatrix
-     * @param {Matrix4} sourceMatrix
-     * @param {Matrix4} cameraMatrix
-     * @returns {Matrix4}
-     */
-    calculateVirtualCameraMatrix(destinationMatrix, sourceMatrix, cameraMatrix) {
-        const dp = destinationMatrix;
+    initGUI() {
+        this.gui = new GUI();
 
-        const isp = sourceMatrix.clone().invert();
-
-        const c = cameraMatrix.clone();
-
-        const r = MathUtils.matRot180Y;
-
-        return c.premultiply(isp).premultiply(r).premultiply(dp);
+        this.gui.add(this, 'maxRecursionCount', 0, 255).step(1).name('Recursion count');
     }
 
-    /**
-     *
-     * @param {Mesh} object3d
-     * @param {Matrix4} cameraMatrixInverse
-     * @returns {Plane}
-     */
-    calculateClipPlaneOf(object3d, cameraMatrixInverse) {
-        const worldDir = new Vector3();
-        object3d.getWorldDirection(worldDir);
+    calculateRecursionCount() {
+        const spWorldDir = new Vector3();
+        this.sourcePortal.getWorldDirection(spWorldDir);
 
-        const clipPlane = new Plane();
+        const dpWorldDir = new Vector3();
+        this.destinationPortal.getWorldDirection(dpWorldDir);
 
-        clipPlane.setFromNormalAndCoplanarPoint(worldDir.negate(), object3d.position);
+        const spPlane = new Plane();
+        spPlane.setFromNormalAndCoplanarPoint(spWorldDir, this.sourcePortal.position);
 
-        clipPlane.applyMatrix4(cameraMatrixInverse);
+        const ray = new Ray(this.destinationPortal.position, dpWorldDir);
+        const intersectFactor = Number(ray.intersectsPlane(spPlane));
 
-        return new Vector4(
-            clipPlane.normal.x,
-            clipPlane.normal.y,
-            clipPlane.normal.z,
-            clipPlane.constant,
-        );
-    }
+        const dotSign = Math.sign(spWorldDir.dot(dpWorldDir));
+        const recursionMult = intersectFactor * MathUtils.clamp(dotSign * -1, 0, 1);
 
-    /**
-     * Only for `main` camera
-     * @param {Object3D} object3d
-     * @param {Matrix4} cameraLocalMat
-     * @param {Matrix4} cameraProjMat
-     */
-    calculateObliqueMatrix(object3d, cameraLocalMat, cameraProjMat) {
-        const t = this.calculateClipPlaneOf(object3d, cameraLocalMat);
-
-        const m = MathUtils.calculateObliqueMatrix(t, cameraProjMat);
-
-        return m;
+        this.recursionCount = this.maxRecursionCount * recursionMult;
     }
 
     /**
@@ -287,13 +264,13 @@ export default class PortalsDemo extends GameObject {
         // clear the array
         this.preCalcMat4Array = [];
 
-        const initModel = this.calculateVirtualCameraMatrix(
+        const initModel = MathUtils.calculateVirtualCameraMatrix(
             destinationPortal.matrix,
             sourcePortal.matrix,
             this.camera.matrix,
         );
         const initView = this.camera.matrixWorldInverse;
-        const initProj = this.calculateObliqueMatrix(
+        const initProj = MathUtils.calculateObliqueMatrix(
             sourcePortal,
             initView,
             this.camera.projectionMatrix,
@@ -302,19 +279,17 @@ export default class PortalsDemo extends GameObject {
         // always have initial matrices to draw portal frame
         this.preCalcMat4Array.push({ model: initModel, view: initView, proj: initProj });
 
-        const recursionCount = 16;
-
         // matrices for recursion
-        for (let i = 1; i <= recursionCount; i++) {
+        for (let i = 1; i <= this.recursionCount; i++) {
             const prevElem = this.preCalcMat4Array[i - 1];
 
-            const model = this.calculateVirtualCameraMatrix(
+            const model = MathUtils.calculateVirtualCameraMatrix(
                 destinationPortal.matrix,
                 sourcePortal.matrix,
                 prevElem.model,
             );
             const view = prevElem.model.clone().invert();
-            const proj = this.calculateObliqueMatrix(
+            const proj = MathUtils.calculateObliqueMatrix(
                 sourcePortal,
                 view,
                 this.camera.projectionMatrix,
@@ -347,6 +322,8 @@ export default class PortalsDemo extends GameObject {
 
         this.destinationPortal.rotation.z += 0.001;
         this.destinationPortalFrame.rotation.x = -this.destinationPortal.rotation.z;
+
+        this.calculateRecursionCount();
 
         this.updateCameraDataForRecursive();
     }

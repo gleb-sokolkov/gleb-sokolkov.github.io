@@ -1,6 +1,8 @@
 import {
-    Matrix3, MathUtils, Matrix4, Euler, Vector4,
+    Matrix3, MathUtils, Matrix4, Euler, Vector4, Vector3, Plane,
 } from 'three';
+
+const PI2 = Math.PI * 2.0;
 
 const mat3ProjXZ = new Matrix3();
 mat3ProjXZ.set(
@@ -19,7 +21,7 @@ Object.freeze(matRot180Y);
  * @param {Matrix4} matrix - a projection matrix
  * @returns {Matrix4}
  */
-function calculateObliqueMatrix(clipPlane, matrix) {
+function _calculateObliqueMatrix(clipPlane, matrix) {
     const q = new Vector4();
     const matMod = matrix.clone();
     const { elements } = matMod;
@@ -57,10 +59,70 @@ function getPillarRandValue(minXZ, maxXZ, thickness) {
     return p;
 }
 
+/**
+ *
+ * @param {Matrix4} destinationMatrix
+ * @param {Matrix4} sourceMatrix
+ * @param {Matrix4} cameraMatrix
+ * @returns {Matrix4}
+ */
+function calculateVirtualCameraMatrix(destinationMatrix, sourceMatrix, cameraMatrix) {
+    const dp = destinationMatrix;
+
+    const isp = sourceMatrix.clone().invert();
+
+    const c = cameraMatrix.clone();
+
+    const r = matRot180Y;
+
+    return c.premultiply(isp).premultiply(r).premultiply(dp);
+}
+
+/**
+ *
+ * @param {Mesh} object3d
+ * @param {Matrix4} cameraMatrixInverse
+ * @returns {Plane}
+ */
+function calculateClipPlaneOf(object3d, cameraMatrixInverse) {
+    const worldDir = new Vector3();
+    object3d.getWorldDirection(worldDir);
+
+    const clipPlane = new Plane();
+
+    clipPlane.setFromNormalAndCoplanarPoint(worldDir.negate(), object3d.position);
+
+    clipPlane.applyMatrix4(cameraMatrixInverse);
+
+    return new Vector4(
+        clipPlane.normal.x,
+        clipPlane.normal.y,
+        clipPlane.normal.z,
+        clipPlane.constant,
+    );
+}
+
+/**
+ * Only for `main` camera
+ * @param {Object3D} object3d
+ * @param {Matrix4} cameraLocalMat
+ * @param {Matrix4} cameraProjMat
+ */
+function calculateObliqueMatrix(object3d, cameraLocalMat, cameraProjMat) {
+    const t = calculateClipPlaneOf(object3d, cameraLocalMat);
+
+    const m = _calculateObliqueMatrix(t, cameraProjMat);
+
+    return m;
+}
+
 export default {
     ...MathUtils,
+    PI2,
     mat3ProjXZ,
     matRot180Y,
+    calculateVirtualCameraMatrix,
+    calculateClipPlaneOf,
     calculateObliqueMatrix,
     getPillarRandValue,
 };
