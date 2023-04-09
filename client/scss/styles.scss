@@ -6,6 +6,7 @@
 
 body {
     overflow-y: hidden;
+    background: $black-a05;
 }
 
 html, body, * {
@@ -15,11 +16,13 @@ html, body, * {
 .menu {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    // align-items: center;
 
     position: fixed;
     inset: 0;
 
+    max-width: 520px;
+    margin: 0 auto;
     padding-top: 5%;
     
     background: $black-a05;
@@ -30,6 +33,7 @@ html, body, * {
     }
 
     &__title {
+        align-self: center;
         font-size: 4rem;
         font-weight: 100;
         text-transform: uppercase;
@@ -37,6 +41,11 @@ html, body, * {
         padding-left: 0.5em;
     }
     
+    &__content {
+        max-width: 340px;
+        align-self: center;
+    }
+
     &__portal-letter {
         margin-left: -0.25em;
 
@@ -53,13 +62,17 @@ html, body, * {
     }
 
     &__start {
+        margin-bottom: 3rem;
+    }
+
+    &__controls {
 
     }
 }
 
 .start {
     display: flex;
-    justify-content: center;
+    // justify-content: center;
     gap: 3rem;
 
     &__btn {
@@ -81,5 +94,29 @@ html, body, * {
     &__message {
         flex: 0 0 12rem;
         margin: 0;
+    }
+}
+
+.controls {
+    &__title {
+        margin-bottom: 0.25em;
+    }
+
+    &__element {
+        &_type_keys {
+            letter-spacing: 0.25em;
+        }
+    }
+}
+
+@media screen and (max-width: 768px) {
+    html, body {
+        font-size: 14px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    html, body {
+        font-size: 12px;
     }
 }

@@ -12,9 +12,22 @@
             P<span class="menu__portal-letter">o</span>rtals
         </h1>
         <!-- <hr class="menu__divider"> -->
-        <div class="menu__start start">
-            <button type="button" class="start__btn">Go</button>
-            <p class="start__message">Click on the button to start beholding the portals!</p>
+        <div class="menu__content">
+            <div class="menu__start start">
+                <button type="button" class="start__btn">Go</button>
+                <p class="start__message">Click on the button to start beholding the portals!</p>
+            </div>
+    
+            <div class="menu__controls controls">
+                <h2 class="controls__title">Controls</h2>
+                <div>
+                    <span class="controls__element controls__element_type_keys">WASD</span> - move along the XZ axis
+                </div>
+                <div>
+                    <span class="controls__element controls__element_type_keys">RF</span> - move along the Y axis
+                </div>
+                <span class="controls__element">Mouse</span> - move camera
+            </div>
         </div>
     </div>
     <canvas id="<%= require('../portals/config.js').default.canvasID %>"></canvas>
