@@ -4,6 +4,7 @@ import {
     MeshBasicMaterial,
     MeshLambertMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Plane, PlaneGeometry, Ray, Scene, TetrahedronGeometry, Vector3, Vector4,
 } from 'three';
+import Stats from 'three/examples/jsm/libs/stats.module';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min';
 import MathUtils from './math/utils';
 import FPSControls from './fps-controls';
@@ -190,13 +191,13 @@ export default class PortalsDemo extends GameObject {
             new MeshStandardMaterial({ color: PortalsDemo.COLORS.bluePortal }),
         );
         this.sourcePortalFrame.castShadow = true;
-        this.sourcePortalFrame.position.set(-5.3, 8, -3);
+        this.sourcePortalFrame.position.set(-5.3, 7, -3);
 
         this.sourcePortal = new Mesh(
             new PlaneGeometry(8, 8),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.bluePortal }),
         );
-        this.sourcePortal.position.set(-5, 8, -3);
+        this.sourcePortal.position.set(-5, 7, -3);
         this.sourcePortal.rotation.set(0, Math.PI * 0.5, 0);
         this.sourcePortal.material.colorWrite = false;
 
@@ -210,14 +211,14 @@ export default class PortalsDemo extends GameObject {
             new MeshStandardMaterial({ color: PortalsDemo.COLORS.orangePortal }),
         );
         this.destinationPortalFrame.castShadow = true;
-        this.destinationPortalFrame.position.set(2.3, 8, -3);
+        this.destinationPortalFrame.position.set(2.3, 7, -3);
 
         this.destinationPortal = new Mesh(
             new PlaneGeometry(8, 8),
             new MeshBasicMaterial({ color: PortalsDemo.COLORS.orangePortal }),
         );
         this.destinationPortal.material.colorWrite = false;
-        this.destinationPortal.position.set(2.0, 8, -3.0);
+        this.destinationPortal.position.set(2.0, 7, -3.0);
         this.destinationPortal.rotation.set(0, Math.PI * 1.5, 0);
 
         this.scene.add(
@@ -235,8 +236,14 @@ export default class PortalsDemo extends GameObject {
         this.gui = new GUI();
 
         this.gui.add(this, 'maxRecursionCount', 0, 255).step(1).name('Recursion count');
+
+        this.stats = new Stats();
+        document.body.appendChild(this.stats.dom);
     }
 
+    /**
+     * @deprecated
+     */
     calculateRecursionCount() {
         const spWorldDir = new Vector3();
         this.sourcePortal.getWorldDirection(spWorldDir);
@@ -280,7 +287,7 @@ export default class PortalsDemo extends GameObject {
         this.preCalcMat4Array.push({ model: initModel, view: initView, proj: initProj });
 
         // matrices for recursion
-        for (let i = 1; i <= this.recursionCount; i++) {
+        for (let i = 1; i <= this.maxRecursionCount; i++) {
             const prevElem = this.preCalcMat4Array[i - 1];
 
             const model = MathUtils.calculateVirtualCameraMatrix(
@@ -307,23 +314,24 @@ export default class PortalsDemo extends GameObject {
 
         this.portalDataArray = [
             {
-                object3d: this.destinationPortal,
-                mat4Array: dstPortalMat4Array,
-            },
-            {
                 object3d: this.sourcePortal,
                 mat4Array: srcPortalMat4Array,
+            },
+            {
+                object3d: this.destinationPortal,
+                mat4Array: dstPortalMat4Array,
             },
         ];
     }
 
     onUpdate(dTime) {
         this.fpsControls.update(dTime);
+        this.stats.update();
 
         this.destinationPortal.rotation.z += 0.001;
         this.destinationPortalFrame.rotation.x = -this.destinationPortal.rotation.z;
 
-        this.calculateRecursionCount();
+        // this.calculateRecursionCount();
 
         this.updateCameraDataForRecursive();
     }
