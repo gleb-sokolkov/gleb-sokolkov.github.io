@@ -1,8 +1,9 @@
-import Game from "./game";
-import GameObject from "./game-object";
+import Game from './game';
+import GameObject from './game-object';
 
 export default class Menu extends GameObject {
     root;
+
     startBtn;
 
     constructor() {

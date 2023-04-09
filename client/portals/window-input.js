@@ -1,5 +1,5 @@
-import { Vector2 } from "three";
-import Game from "./game";
+import { Vector2 } from 'three';
+import Game from './game';
 
 export default class WindowInput {
     static get KEYS() {
@@ -20,6 +20,7 @@ export default class WindowInput {
     }
 
     static #instance;
+
     static get instance() {
         return WindowInput.#instance;
     }
@@ -33,11 +34,13 @@ export default class WindowInput {
     #keyInput;
 
     #mouseInput;
+
     get mouseInput() {
         return this.#mouseInput;
     }
 
     #events;
+
     get events() {
         return this.#events;
     }
@@ -69,7 +72,7 @@ export default class WindowInput {
 
     #initEvents() {
         this.#events = {};
-        
+
         this.#events[WindowInput.EVENTS.ON_MOUSE_MOVE] = new CustomEvent(WindowInput.EVENTS.ON_MOUSE_MOVE);
     }
 
@@ -80,14 +83,14 @@ export default class WindowInput {
     handleKeyUp({ keyCode }) {
         this.#keyInput[keyCode] = 0;
     }
-    
+
     handleMouseMove({ movementX, movementY }) {
         this.mouseInput.movement.x = movementX || 0;
         this.mouseInput.movement.y = movementY || 0;
-        
+
         Game.canvasElement.dispatchEvent(this.#events[WindowInput.EVENTS.ON_MOUSE_MOVE]);
     }
-    
+
     getKeyInputInt(keyCodes) {
         let result = 0;
 

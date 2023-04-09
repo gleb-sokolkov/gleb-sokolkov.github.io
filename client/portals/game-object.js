@@ -1,5 +1,5 @@
-import Game from "./game";
-import Updatable from "./updatable";
+import Game from './game';
+import Updatable from './updatable';
 
 export default class GameObject extends Updatable {
     constructor() {

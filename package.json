@@ -23,11 +23,12 @@
   },
   "homepage": "https://github.com/gleb-sokolkov/tasks.git#readme",
   "dependencies": {
-    "express": "^4.17.2",
+    "express": "^4.18.2",
     "three": "^0.148.0"
   },
   "devDependencies": {
     "@babel/core": "^7.16.7",
+    "@babel/eslint-parser": "^7.21.3",
     "@babel/plugin-proposal-class-properties": "^7.16.7",
     "@babel/preset-env": "^7.16.8",
     "autoprefixer": "^10.4.2",
@@ -49,7 +50,7 @@
     "postcss-preset-env": "^7.2.3",
     "sass-loader": "^12.4.0",
     "terser-webpack-plugin": "^5.3.0",
-    "webpack": "^5.66.0",
+    "webpack": "^5.78.0",
     "webpack-cli": "^4.9.1",
     "webpack-merge": "^5.8.0"
   },
@@ -74,6 +75,7 @@
     "not ie <= 9"
   ],
   "eslintConfig": {
+    "parser": "@babel/eslint-parser",
     "extends": "airbnb-base",
     "ignorePatterns": [
       "webpack.*.js",

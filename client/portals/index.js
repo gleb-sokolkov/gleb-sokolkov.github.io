@@ -1,6 +1,7 @@
 import WebGL from 'three/examples/jsm/capabilities/WebGL';
 import config from './config';
 import Game from './game';
+import WindowInput from './window-input';
 import PortalsDemo from './portals-demo';
 import Menu from './menu';
 
@@ -15,6 +16,7 @@ if (!WebGL.isWebGL2Available) {
     Game.initRenderer(config.canvasID);
     Game.initGameEvents();
     Game.subscribeToBrowserEvents();
+    WindowInput.init();
 
     Game.pScene = new PortalsDemo();
     Game.ui = new Menu();

@@ -1,5 +1,4 @@
 import { Clock, WebGLRenderer } from 'three';
-import WindowInput from './window-input';
 
 export default class Game {
     static get EVENTS() {
@@ -7,70 +6,84 @@ export default class Game {
             ON_PLAY: 'onPlay',
             ON_STOP_PLAYING: 'onStopPlaying',
         };
-    };
-    
+    }
+
     static #canvasElement;
+
     static get canvasElement() {
         return Game.#canvasElement;
     }
+
     static set canvasElement(value) {
         Game.#canvasElement = value;
     }
 
     static #renderer;
+
     /**
      * @returns {WebGLRenderer}
      */
     static get renderer() {
         return Game.#renderer;
     }
+
     static set renderer(value) {
         Game.#renderer = value;
     }
 
     static #pScene;
+
     static get pScene() {
         return Game.#pScene;
     }
+
     static set pScene(value) {
         Game.#pScene = value;
     }
 
     static #ui;
+
     static get ui() {
         return Game.#ui;
     }
+
     static set ui(value) {
         Game.#ui = value;
     }
 
     static #clock;
+
     /**
      * @returns {Clock}
      */
     static get clock() {
         return Game.#clock;
     }
+
     static set clock(value) {
         Game.#clock = value;
     }
 
     static #isLocked;
+
     static get isLocked() {
         return Game.#isLocked;
     }
+
     static set isLocked(value) {
         Game.#isLocked = value;
     }
 
     static #events;
+
     static get events() {
         return Game.#events;
     }
+
     static set events(value) {
         Game.#events = value;
     }
-    
+
     static initRenderer(domElementID) {
         Game.canvasElement = document.getElementById(domElementID);
 
@@ -89,8 +102,6 @@ export default class Game {
     }
 
     static subscribeToBrowserEvents() {
-        WindowInput.init();
-
         document.addEventListener('pointerlockchange', Game.handlePointerLockChange);
     }
 
@@ -101,7 +112,7 @@ export default class Game {
             await Game.canvasElement.requestPointerLock({
                 unadjustedMovement: true,
             });
-        } catch(ex) {
+        } catch (ex) {
             console.error('Mouse acceleration are not supported on this platform!');
 
             await Game.canvasElement.requestPointerLock();
@@ -131,7 +142,7 @@ export default class Game {
 
     static startLoop() {
         Game.clock = new Clock();
-        
+
         const loop = () => {
             const dTime = Game.clock.getDelta();
 

@@ -1,4 +1,6 @@
-import { Camera, Euler, Matrix3, Vector3 } from 'three';
+import {
+    Camera, Euler, Matrix3, Vector3,
+} from 'three';
 import MathUtils from './math/utils';
 import Game from './game';
 import WindowInput from './window-input';
